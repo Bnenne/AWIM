@@ -41,15 +41,15 @@ class ClusterFuck:
 
     def to_hsv(self):
         self.hsv_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
-        self.hsv_values = self.hsv_image.reshape(-1, 3)  # flatten to Nx3
+        self.hsv_values = self.hsv_image.reshape(-1, 3)  # Flatten to Nx3
 
     def fit(self):
         n_clusters = 5
         spectral = SpectralClustering(
             n_clusters=n_clusters,
-            affinity='nearest_neighbors',  # or 'rbf'
-            n_neighbors=10,  # used only for 'nearest_neighbors'
-            assign_labels='kmeans',  # how labels are assigned
+            affinity='nearest_neighbors',  # Or 'rbf'
+            n_neighbors=10,  # Used only for 'nearest_neighbors'
+            assign_labels='kmeans',  # How labels are assigned
             random_state=42
         )
         spectral.fit(self.hsv_values)

@@ -16,33 +16,33 @@ from io import BytesIO
 import colorsys
 import math
 
-# setting appearance for the window
+# Setting appearance for the window
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# converts a hex value to a rgb tuple
+# Converts a hex value to a rgb tuple
 def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')  # Remove '#' if present
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
-# converts an rgb tuple to a hex value
+# Converts an rgb tuple to a hex value
 def rgb_to_hex(rgb_color):
     r, g, b = rgb_color
     return f'#{int(r):02x}{int(g):02x}{int(b):02x}'
 
-# return a smaller easier to work with image
+# Return a smaller easier to work with image
 def compress_image(image, screen_size, quality=100):
     pil_image = Image.fromarray(image)
 
     screen_width, screen_height = screen_size
 
-    # defining the max size of the image
+    # Defining the max size of the image
     screen_width = screen_width * 0.6
     screen_height = screen_height * 0.6
 
     width, height = pil_image.size
 
-    # finding the largest dimension and scaling both dimensions by that scale
+    # Finding the largest dimension and scaling both dimensions by that scale
     if width >= screen_width and height >= screen_height:
         width_scale = width/screen_width
         height_scale = height/screen_height
@@ -56,15 +56,15 @@ def compress_image(image, screen_size, quality=100):
 
     pil_image = pil_image.resize((int(width), int(height)))
 
-    # saves the new smaller image to memory instead of disk
+    # Saves the new smaller image to memory instead of disk
     buffer = BytesIO()
     pil_image.save(buffer, format="JPEG", quality=quality, optimize=True)
     buffer.seek(0)
 
-    # converts image to numpy array because that's what opencv uses
+    # Converts image to numpy array because that's what opencv uses
     return np.array(Image.open(buffer))
 
-# opens image and converts it to rgb grayscale
+# Opens image and converts it to rgb grayscale
 def open_gray_scale(file, screen_size):
     image_gs_simple = cv2.imread(file, 0)
 
@@ -72,7 +72,7 @@ def open_gray_scale(file, screen_size):
 
     return cv2.cvtColor(image_gs_simple_compressed, cv2.COLOR_GRAY2RGB), cv2.cvtColor(image_gs_simple, cv2.COLOR_GRAY2RGB)
 
-# opens image and converts it to rgb
+# Opens image and converts it to rgb
 def open_to_rgb(file, screen_size):
     image_og = cv2.imread(file, 1)
 
@@ -80,21 +80,22 @@ def open_to_rgb(file, screen_size):
 
     return cv2.cvtColor(image_og_compressed, cv2.COLOR_BGR2RGB)
 
-# creates papers, masks, and applies and combines them
+# Creates papers, masks, and applies and combines them
 def customize(image, breaks, colors):
 
-    # creating colored paper
+    # Creating colored paper
     papers = []
     for color in colors:
         papers.append(
             eyw.create_colored_paper(image, color[0], color[1], color[2])
         )
 
-    # creating masks
+    # Creating masks
     masks = []
 
+    # Creating the masks based off the position of the color
     for i in range(len(colors)):
-        if i == 0:
+        if i == 0: # First color
             masks.append(
                 eyw.create_mask(
                     image,
@@ -102,7 +103,7 @@ def customize(image, breaks, colors):
                     [breaks[i], breaks[i], breaks[i]]
                 )
             )
-        elif colors[i] == colors[-1]:
+        elif colors[i] == colors[-1]: # Last color
             masks.append(
                 eyw.create_mask(
                     image,
@@ -110,7 +111,7 @@ def customize(image, breaks, colors):
                     [255, 255, 255]
                 )
             )
-        else:
+        else: # Middle colors
             masks.append(
                 eyw.create_mask(
                     image,
@@ -119,14 +120,14 @@ def customize(image, breaks, colors):
                 )
             )
 
-    # combining applying masks
+    # Combining applying masks
     parts = []
     for i in range(len(colors)):
         parts.append(
             eyw.apply_mask(papers[i], masks[i])
         )
 
-    # combing masks and colored paper
+    # Combing masks and colored paper
     customized_image = eyw.combine_images(parts[0], parts[1])
     for i in range(len(parts)):
         if i >= 2:
@@ -134,33 +135,33 @@ def customize(image, breaks, colors):
 
     return customized_image
 
-# turns image into a CTKImage
+# Turns image into a CTKImage
 def create_ctk_image(image):
     pil_image = Image.fromarray(image)
 
     return ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=pil_image.size)
 
-# create color wheel for color picker
+# Create color wheel for color picker
 def create_color_wheel(size=300):
     radius = size // 2
     img = np.zeros((size, size, 3), dtype=np.uint8)
 
     for y in range(size):
         for x in range(size):
-            # translating coords so (0,0) is at the center
+            # Translating coords so (0,0) is at the center
             dx = x - radius
             dy = y - radius
 
             r = np.sqrt(dx * dx + dy * dy) / radius
 
-            if r <= 1:  # inside circle
+            if r <= 1:  # Inside circle
                 theta = np.arctan2(dy, dx)
-                hue = (theta + np.pi) / (2 * np.pi) # hue is defined by the degrees around the color wheel
-                sat = r # saturation is defined by the distance from the center
-                val = 1.0 # value will be controlled by slider so the wheel will just have full value
-                rgb = colorsys.hsv_to_rgb(hue, sat, val) # turning hsv value into rgb for the actual pixels
-                img[y, x] = [int(c * 255) for c in rgb] # setting pixel value
-            if r > 1: # outside circle
+                hue = (theta + np.pi) / (2 * np.pi) # Hue is defined by the degrees around the color wheel
+                sat = r # Saturation is defined by the distance from the center
+                val = 1.0 # Value will be controlled by slider so the wheel will just have full value
+                rgb = colorsys.hsv_to_rgb(hue, sat, val) # Turning hsv value into rgb for the actual pixels
+                img[y, x] = [int(c * 255) for c in rgb] # Setting pixel value
+            if r > 1: # Outside circle
                 img[y, x] = [36,36,36] # The color of the background
 
     return Image.fromarray(img)
@@ -170,82 +171,82 @@ class ColorPicker(ctk.CTkToplevel):
         super().__init__(master)
 
         self.title("Color Picker")
-        self.geometry("320x475") # size of the window
+        self.geometry("320x475") # Size of the window
         self.callback = callback
 
-        self.transient(master)  # tie to parent
-        self.grab_set()  # make modal (blocks interaction with parent until closed)
-        self.lift()  # bring above other windows
-        self.focus_force()  # force focus
+        self.transient(master)  # Tie to parent
+        self.grab_set()  # Blocks interaction with parent until closed
+        self.lift()  # Bring above other windows
+        self.focus_force()  # Force focus
 
         self.color = color
         self.hex_text = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}"
 
-        r, g, b = color # pulling out rgb values from starting color
+        r, g, b = color # Pulling out rgb values from starting color
 
         # Getting the hue, saturation, and value from the rgb
         self.hue, self.sat, self.val = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
 
-        # setting standardized sizes and defining marker to be used later
+        # Setting standardized sizes and defining marker to be used later
         self.size = size
         self.radius = size // 2
         self.marker_id = None
 
-        # creating the color wheel and turning it into a usable image
+        # Creating the color wheel and turning it into a usable image
         wheel = create_color_wheel()
         self.tk_img = ImageTk.PhotoImage(wheel)
 
-        # canvas to display wheel
+        # Canvas to display wheel
         self.canvas = ctk.CTkCanvas(self, width=size, height=size, bg="white", highlightthickness=0)
         self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
         self.canvas.grid(row=0, column=0, padx=20, pady=20)
 
-        # slider to adjust value
+        # Slider to adjust value
         self.slider = ctk.CTkSlider(self, width=size, command=self._update_value)
         self.slider.grid(row=1, column=0, padx=10)
 
-        self.slider.set(self.val) # setting slider to starting value
+        self.slider.set(self.val) # Setting slider to starting value
 
-        # container frame
+        # Container frame
         self.preview = ctk.CTkFrame(self, width=size, height=100, fg_color=self.hex_text)
         self.preview.grid(row=2, column=0, padx=10, pady=20)
 
-        # label inside frame
+        # Label inside frame
         self.text = ctk.CTkEntry(self.preview, width=70, height=30, text_color="#ffffff", fg_color="#000000")
         self.text.pack(padx=75, pady=5)
 
-        # apply/save button
+        # Apply/save button
         apply_button = ctk.CTkButton(self, width=size, height=40, text="Apply", command=self.apply)
         apply_button.grid(row=3, column=0, padx=10, pady=20)
 
-        self.text.insert(-1, self.hex_text) # putting the starting hex value into the entry field
+        self.text.insert(-1, self.hex_text) # Putting the starting hex value into the entry field
 
-        # bind mouse click
+        # Bind mouse click
         self.canvas.bind("<Button-1>", self.pick_color)
         self.canvas.bind("<B1-Motion>", self.pick_color)
         self.canvas.bind("<ButtonRelease-1>", self.pick_color)
 
-        # bind key press
+        # Bind key press
         self.text.bind("<Key>", self.hex_input)
 
-        theta = (self.hue * 2 * math.pi)  # radians
+        theta = (self.hue * 2 * math.pi)  # Radians
         radius = self.sat
 
         cx = cy = self.size // 2  # Center of the color wheel
-        r_pixels = radius * (self.size // 2)  # scale to pixels
+        r_pixels = radius * (self.size // 2)  # Scale to pixels
 
-        # polar coords to cartesian coords
+        # Polar coords to cartesian coords
         x = cx + r_pixels * -math.cos(theta)
         y = cy + r_pixels * -math.sin(theta)
 
-        self.place_marker(x, y)  # moving the marker into place
+        self.place_marker(x, y)  # Moving the marker into place
 
     def pick_color(self, event):
         dx = event.x - self.radius
         dy = event.y - self.radius
         r = np.sqrt(dx*dx + dy*dy) / self.radius
 
-        if r <= 1:  # inside the wheel
+        if r <= 1:  # Inside the wheel
             theta = np.arctan2(dy, dx)
             self.hue = (theta + np.pi) / (2*np.pi)
             self.sat = r
@@ -253,7 +254,7 @@ class ColorPicker(ctk.CTkToplevel):
             rgb = tuple(int(c*255) for c in rgb)
             hex_val = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
 
-            # update preview
+            # Update preview
             self.preview.configure(fg_color=hex_val)
 
             for i in range(len(self.hex_text)):
@@ -263,11 +264,11 @@ class ColorPicker(ctk.CTkToplevel):
 
             self.hex_text = self.text.get()
 
-            # place/update marker
+            # Place/update marker
             self.place_marker(event.x, event.y)
 
     def hex_input(self, event):
-        if event.keycode == 8: # keycode for Backspace key
+        if event.keycode == 8: # Keycode for the backspace key
             self.hex_text = self.text.get()[:-1]
         else:
             self.hex_text = self.text.get() + event.char
@@ -275,11 +276,11 @@ class ColorPicker(ctk.CTkToplevel):
         length = len(self.hex_text)
 
         try:
-            if self.hex_text[0] != "#" and len(self.hex_text) > 0: # if there isn't a '#' in the entry field
+            if self.hex_text[0] != "#" and len(self.hex_text) > 0: # If there isn't a '#' in the entry field
                 self.text.insert(0, "#")
                 self.hex_text = self.text.get()
         except IndexError:
-            self.text.insert(-1, "#") # if there isn't anything already in the entry field
+            self.text.insert(-1, "#") # If there isn't anything already in the entry field
 
         if length == 7:
             try:
@@ -293,55 +294,55 @@ class ColorPicker(ctk.CTkToplevel):
 
                 self.slider.set(self.sat)
 
-                theta = (self.hue * 2 * math.pi)  # radians
+                theta = (self.hue * 2 * math.pi)  # Radians
                 radius = self.sat
 
                 cx = cy = self.size // 2 # Center of the color wheel
-                r_pixels = radius * (self.size // 2) # scale to pixels
+                r_pixels = radius * (self.size // 2) # Scale to pixels
 
-                # polar coords to cartesian coords
+                # Polar coords to cartesian coords
                 x = cx + r_pixels * -math.cos(theta)
                 y = cy + r_pixels * -math.sin(theta)
 
-                self.place_marker(x, y) # moving the marker into place
+                self.place_marker(x, y) # Moving the marker into place
             except ValueError:
                 pass
 
     def place_marker(self, x, y):
-        r = 6  # radius of marker circle
+        r = 6  # Radius of marker circle
         if self.marker_id is None:
-            # first time: create a new oval
+            # First time: create a new oval
             self.marker_id = self.canvas.create_oval(
                 x-r, y-r, x+r, y+r,
                 outline="black", width=2, fill=""
             )
         else:
-            # move existing oval
+            # Move the existing oval
             self.canvas.coords(self.marker_id, x-r, y-r, x+r, y+r)
 
     def _update_value(self, value):
         self.val = value
-        # update the preview
+        # Update the preview
         rgb = colorsys.hsv_to_rgb(self.hue, self.sat, self.val)
         rgb = tuple(int(c * 255) for c in rgb)
         hex_val = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
 
         self.preview.configure(fg_color=hex_val)
 
-        # deleting what is currently in the entry field
+        # Deleting what is currently in the entry field
         for i in range(len(self.hex_text)):
             self.text.delete(0, len(self.hex_text))
 
-        # putting new hex code into entry field
+        # Putting new hex code into entry field
         self.text.insert(-1, hex_val)
 
         self.hex_text = self.text.get()
 
     def apply(self):
         try:
-            text = self.text.get()[1:] # hex value with the  '#'
+            text = self.text.get()[1:] # Hex value with the '#'
 
-            # turning hex code into rgb
+            # Turning hex code into rgb
             r = int(text[0:2], 16)
             g = int(text[2:4], 16)
             b = int(text[4:6], 16)
@@ -350,7 +351,7 @@ class ColorPicker(ctk.CTkToplevel):
         except ValueError:
             pass
 
-        if self.callback: # the callback that returns the color data
+        if self.callback: # The callback that returns the color data
             self.callback(self.color, self.text.get())
         self.destroy()
 
@@ -375,7 +376,7 @@ class Color(ctk.CTkFrame):
         )
         self.color_button.pack(side="right", padx=2)
 
-        # every color button except the first will have a grayscale button with it
+        # Every color button except the first will have a grayscale button with it
         if self.position > 0:
             self.gs_button = ctk.CTkButton(
                 master=self,
@@ -398,13 +399,13 @@ class Color(ctk.CTkFrame):
         pick_color.callback = on_color_picked
 
     def choose_grayscale(self):
-        self.gs_button.configure(fg_color="#0C2940") # makes the button look selected
+        self.gs_button.configure(fg_color="#0C2940") # Makes the button look selected
         self.painting.slider_gs.set(self.painting.breaks[self.position-1])
         self.painting.chosen_gs = self.position-1
-        for button in self.painting.color_buttons: # tell every other button to unselect
+        for button in self.painting.color_buttons: # Tell every other button to unselect
             button.unselect(self.position)
 
-    # tells buttons to unselect/change color if they aren't a certain position
+    # Tells buttons to unselect/change color if they aren't a certain position
     def unselect(self, selected):
         if self.position > 0 and self.position != selected:
             self.gs_button.configure(fg_color="#1F6AA5")
@@ -486,7 +487,7 @@ class Painting:
         self.slider_gs = ctk.CTkSlider(master=slider_frame, from_=0, to=254, number_of_steps=254, command=self._update_gs)
         self.slider_gs.pack(side="left", padx=5)
 
-        # creating a button for each image
+        # Creating a button for each image
         for i in self.images:
             image_button = ctk.CTkButton(
                 master=button_frame,
@@ -496,7 +497,7 @@ class Painting:
             image_button.pack(side="left", padx=5)
             self.image_buttons.append([i[0], image_button])
 
-        # button to save colors and grayscale breaks as a preset
+        # Button to save colors and grayscale breaks as a preset
         save_preset_button = ctk.CTkButton(
             master=button_frame,
             width=100,
@@ -505,7 +506,7 @@ class Painting:
         )
         save_preset_button.pack(side="left", padx=5)
 
-        # loading a previously saved preset
+        # Loading a previously saved preset
         load_preset_button = ctk.CTkButton(
             master=button_frame,
             width=100,
@@ -514,7 +515,7 @@ class Painting:
         )
         load_preset_button.pack(side="left", padx=5)
 
-        # button to remove image
+        # Button to remove image
         remove_button = ctk.CTkButton(
             master=button_frame,
             fg_color="#ff0000",
@@ -524,7 +525,7 @@ class Painting:
         )
         remove_button.pack(side="left", padx=5)
 
-        # creating a button for each color
+        # Creating a button for each color
         for color in self.colors:
             self.color_buttons.append(
                 Color(
@@ -535,10 +536,10 @@ class Painting:
                 )
             )
 
-        # creating a bold font for buttons
+        # Creating a bold font for buttons
         bold = ctk.CTkFont(family="Helvetica", size=18, weight="bold")
 
-        # button for adding colors
+        # Button for adding colors
         add_button = ctk.CTkButton(
             master=self.color_frame,
             width=28,
@@ -549,7 +550,7 @@ class Painting:
         )
         add_button.pack(side="right", padx=5)
 
-        # button for removing colors
+        # Button for removing colors
         sub_button = ctk.CTkButton(
             master=self.color_frame,
             width=28,
@@ -560,7 +561,7 @@ class Painting:
         )
         sub_button.pack(side="right", padx=5)
 
-        # image row
+        # Image row
         self.current = self.images[0][0]
         self.image_label = ctk.CTkLabel(master=image_frame, image=self.images[0][1], text="")
         self.image_label.grid(row=3, column=0, pady=10, sticky="n")
@@ -609,7 +610,7 @@ class Painting:
 
         self._update_images()
 
-    # changes displayed image
+    # Changes displayed image
     def _switch_image(self, image):
         for button in self.image_buttons:
             button[1].configure(fg_color="#1F6AA5")
@@ -629,7 +630,7 @@ class Painting:
         break_max = 254
         break_min = 0
 
-        # preventing overlap in grayscale break ranges
+        # Preventing overlap in grayscale break ranges
         if len(self.breaks) == 1:
             pass
         elif self.chosen_gs == 0:
@@ -648,10 +649,10 @@ class Painting:
         self.breaks[self.chosen_gs] = value
         self._update_images()
 
-    # replaces images in self.images with new updated ones
+    # Replaces images in self.images with new updated ones
     def _update_images(self):
         self.image_cstm = customize(self.image_gs, self.breaks, self.colors)
-        self.images = [  # images as CTkImages
+        self.images = [  # Images as CTkImages
             ["Customized", create_ctk_image(self.image_cstm)],
             ["Original", create_ctk_image(self.image_rgb)],
             ["Gray Scale", create_ctk_image(self.image_gs)],
@@ -659,7 +660,7 @@ class Painting:
         if self.current == self.images[0][0]:
             self._update_current(self.images[0][1])
 
-    # returns image if given the classes name
+    # Returns image if given the classes name
     def get_image(self, name):
         if name == self.name:
             return customize(self.og_gs, self.breaks, self.colors)
@@ -686,14 +687,14 @@ class Painting:
 
         self.update_colors()
 
-# the help window
+# The help window
 class Help(ctk.CTkToplevel):
     def __init__(self, master=None, width=430, height=600):
         super().__init__(master)
 
         self.title("Help")
         self.geometry(f"{width}x{height}")
-        self.transient(master)  # tie to parent
+        self.transient(master)  # Tie to parent
         self.withdraw()
 
         scroll = ctk.CTkScrollableFrame(master=self, width=width-10, height=height-10,)
@@ -770,9 +771,9 @@ class Presets(ctk.CTkToplevel):
         self.remove_callback = remove_callback
         self.title("Presets")
         self.geometry(f"{width}x{height}")
-        self.transient(master)  # tie to parent
-        self.lift()  # bring above other windows
-        self.focus_force()  # force focus
+        self.transient(master)  # Tie to parent
+        self.lift()  # Bring above other windows
+        self.focus_force()  # Force focus
 
         self.scroll = ctk.CTkScrollableFrame(master=self, width=width - 10, height=height - 10, )
         self.scroll.pack(padx=10, pady=10)
@@ -783,12 +784,12 @@ class Presets(ctk.CTkToplevel):
         self.create_buttons()
 
     def choose(self, config):
-        if self.callback:  # the callback that returns the color data
+        if self.callback:  # The callback that returns the color data
             self.callback(config)
         self.destroy()
 
     def remove(self, preset):
-        if self.remove_callback:  # the callback that returns the color data
+        if self.remove_callback:  # The callback that returns the color data
             self.remove_callback(preset)
 
     def update_presets(self, presets):
@@ -825,14 +826,14 @@ class Presets(ctk.CTkToplevel):
             self.items.append(delete_button)
 
 
-    # class that controls the general app
+    # Class that controls the general app
 class App(ctk.CTkToplevel):
     def __init__(self, master=None):
         super().__init__(master)
 
         self.screen_size = (self.winfo_screenwidth(), self.winfo_screenheight())
 
-        # creating holder for buttons and the buttons
+        # Creating holder for buttons and the buttons
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
         button_frame.pack(side="top", anchor="w", pady=10)
 
@@ -847,59 +848,60 @@ class App(ctk.CTkToplevel):
 
         self.help = Help(master=self)
 
-        # creating tab viewer
+        # Creating tab viewer
         self.tab_view = ctk.CTkTabview(master=self)
         self.tab_view.pack(side="top", fill="both", expand=True, padx=20, pady=20)
 
         self.paintings = []
 
-    # prompts user to select an image
+    # Prompts user to select an image
     def _open(self):
         file = filedialog.askopenfilename(
             title="Select a file",
             filetypes=[("Image Files", "*.png *.jpg *.jpeg")]
         )
 
-        # creates a new Painting object with the selected file
+        # Creates a new Painting object with the selected file
         if file:
             self.paintings.append(Painting(file, self.tab_view, self.screen_size, self))
             self._display()
             self.tab_view.set(file.split('/')[-1])
 
     def _save(self):
-        current = self.tab_view.get() # getting current open image
+        current = self.tab_view.get() # Getting current open image
         if current != "":
             image = None
-            for painting in self.paintings: # asking each painting for their image
+            for painting in self.paintings: # Asking each painting for their image
                 response = painting.get_image(current)
                 if isinstance(response, np.ndarray):
-                    image = Image.fromarray(response) # converting numpy.ndarray into valid image format
+                    image = Image.fromarray(response) # Converting numpy.ndarray into valid image format
 
-            # asking user where to save image and what to call it
+            # Asking user where to save image and what to call it
             filename = filedialog.asksaveasfilename(
                 defaultextension=".png",
                 filetypes=[("Image Files", "*.png *.jpg *.jpeg")]
             )
 
-            # save the image
+            # Save the image
             image.save(filename)
 
     def _help(self):
         try:
-            self.help.deiconify() # show window
-            self.help.lift()  # bring above other windows
-            self.help.focus_force()  # force focus
-        except _tkinter.TclError: # if the window was destroyed
+            self.help.deiconify() # Show window
+            self.help.lift()  # Bring above other windows
+            self.help.focus_force()  # Force focus
+        except _tkinter.TclError: # If the window was destroyed
             self.help = Help(master=self)
-            self.help.deiconify() # show window
-            self.help.lift()  # bring above other windows
-            self.help.focus_force()  # force focus
+            self.help.deiconify() # Show window
+            self.help.lift()  # Bring above other windows
+            self.help.focus_force()  # Force focus
 
-    # tells the painting classes to display
+    # Tells the painting classes to display
     def _display(self):
         for painting in self.paintings:
             painting.display()
 
+    # Remove a painting from display
     def remove(self, painting):
         self.paintings.remove(painting)
         self.tab_view.delete(painting.name)
@@ -910,34 +912,39 @@ class App(ctk.CTkToplevel):
             "colors": colors
         }
 
+        # Prompting the user to name the preset
         prompt = ctk.CTkInputDialog(text="Preset Name:", title="Save Preset")
         preset_name = prompt.get_input()
 
-        if preset_name is not None:
+        if preset_name is not None: # If the user cancels or exits it will not save the preset
             filename = 'presets.json'
 
             existing_data = []
 
+            # Get the existing presets
             try:
                 with open(filename, 'r') as file:
                     existing_data = json.load(file)
             except FileNotFoundError:
                 pass
 
+            # Add new preset
             existing_data.append({
                 "name": preset_name,
                 "config": data
             })
 
+            # Update presets.json
             with open(filename, 'w') as file:
                 json.dump(existing_data, file, indent=4)
 
     def load_preset(self, painting):
-
+        # Name of the file that presets are named in
         filename = 'presets.json'
 
         presets = []
 
+        # Get the preset list
         try:
             with open(filename, 'r') as file:
                 presets = json.load(file)
@@ -946,28 +953,32 @@ class App(ctk.CTkToplevel):
 
         preset_window = Presets(master=self, presets=presets)
 
+        # Callback when a preset gets picked
         def on_preset_picked(config):
             breaks = config["breaks"]
             colors = config["colors"]
 
             painting.load_preset(breaks, colors)
 
+        # Callback when a preset gets deleted
         def remove_preset(preset):
-            presets.remove(preset)
+            presets.remove(preset) # Remove the deleted preset
 
+            # Update presets.json
             with open(filename, 'w') as file:
                 json.dump(presets, file, indent=4)
 
+            # Return the updated preset list
             preset_window.update_presets(presets)
 
         preset_window.callback = on_preset_picked
         preset_window.remove_callback = remove_preset
 
-# there needs to be a default CTk class for everything else
+# There needs to be a default CTk class for everything else
 class Root(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.withdraw()  # hide the root window
+        self.withdraw()  # Hide the root window
 
     def create_app(self):
         app = App(master=self)

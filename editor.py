@@ -712,18 +712,18 @@ class Help(ctk.CTkToplevel):
         
         --Saving Images--
         
-        If you have opened multiple images select image
+        If you have opened multiple images, select the image
         you want to save, then click the button labeled
         "Save". Navigate to the folder you would like to
-        save your image, name your image, save it.
+        save your image to, name your image, then save it.
         
         The save button will not work if you have no open
         image.
         
         --Viewing Images--
         
-        When you add multiple you can cycle through them
-        by click the tab with their respective names.
+        When you add multiple images you can cycle through
+        them by click the tab with their respective names.
         
         You can also see the different views for individual
         images by clicking the buttons labeled "Customized",
@@ -759,6 +759,26 @@ class Help(ctk.CTkToplevel):
         it is blocked by another slider. The sliders are unable
         to overlap with one another so you must first adjust
         the other sliders.
+        
+        --Saving Presets--
+        
+        If you would like to save the current colors and
+        grayscale breaks as a preset for future use you can do
+        so by clicking the button labeled "Save Preset". You
+        will then be prompted to enter a name for the preset
+        that you can then save by clicking the button labeled
+        "Ok". You can also cancel by clicking the button labeled
+        "Cancel" or exiting the "Save Preset" prompt.
+        
+        --Loading Presets--
+        
+        If you would like to load a previously saved preset you
+        can do so by clicking the button labeled "Load Preset".
+        You will then be prompted to select the preset that you
+        want to load. To delete a preset, you can click the
+        red button labeled "X" next to the preset you would
+        like to delete. You can also cancel by exiting the
+        "Presets" prompt.
         """
 
         textbox.insert(0.0, text)
